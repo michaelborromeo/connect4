@@ -1,9 +1,20 @@
 export const RESET_GAME = 'RESET_GAME';
 export const ADD_DISC = 'ADD_DISC';
 
-const GRID_ROWS = 6;
-const GRID_COLUMNS = 7;
+export const GRID_ROWS = 6;
+export const GRID_COLUMNS = 7;
 const DISCS_NEEDED_FOR_WIN = 4;
+// the directions you can go in a 2d grid
+const DIRECTIONS = [
+  {column: -1, row: -1, direction: 'diagonalDown'},
+  {column: 0, row: -1, direction: 'vertical'},
+  {column: 1, row: -1, direction: 'diagonalUp'},
+  {column: 1, row: 0, direction: 'horizontal'},
+  {column: 1, row: 1, direction: 'diagonalDown'},
+  {column: 0, row: 1, direction: 'vertical'},
+  {column: -1, row: 1, direction: 'diagonalUp'},
+  {column: -1, row: 0, direction: 'horizontal'}
+];
 
 const initialState = {
   grid: createGrid(),
@@ -33,7 +44,7 @@ export default (state = initialState, action) => {
       const grid = createUpdatedGrid(state.grid, state.turn, cell);
 
       // find connected discs that satisfy the winning condition
-      const gameOver = isGameOver(grid, state.turn, cell);
+      const gameOver = isGameOver(grid, cell, state.turn);
 
       return {
         grid,
@@ -46,12 +57,23 @@ export default (state = initialState, action) => {
   }
 }
 
+/**
+ * Reset the game.
+ *
+ * @returns {{type: string}}
+ */
 export function resetGame() {
   return {
     type: RESET_GAME
   };
 }
 
+/**
+ * Add a disc to a column.
+ *
+ * @param column
+ * @returns {{type: string, column: *}}
+ */
 export function addDisc(column) {
   return {
     type: ADD_DISC,
@@ -75,15 +97,12 @@ function createGrid(oldGrid) {
       const cell = {
         // when a disc is placed in this cell, it will be marked with the turn it was used
         // the player can be derived from the turn -- all even turns will be player 1, and odd for 2
-        usedAtTurn: -1,
-        // only when a winning set of connected discs is found will this be set to true
-        connected: false
+        usedAtTurn: -1
       };
 
       if (oldGrid) {
         // assuming oldGrid is of same size
         cell.usedAtTurn = oldGrid[i][j].usedAtTurn;
-        cell.connected = oldGrid[i][j].connected;
       }
 
       column.push(cell);
@@ -137,20 +156,7 @@ function createUpdatedGrid(oldGrid, turn, cell) {
  * @param cell
  * @param turn
  */
-function isGameOver(grid, turn, cell) {
-
-  // the directions you can go in a 2d grid
-  const directions = [
-    {column: -1, row: -1, direction: "diagonalDown"},
-    {column: 0, row: -1, direction: "vertical"},
-    {column: 1, row: -1, direction: "diagonalUp"},
-    {column: 1, row: 0, direction: "horizontal"},
-    {column: 1, row: 1, direction: "diagonalDown"},
-    {column: 0, row: 1, direction: "vertical"},
-    {column: -1, row: 1, direction: "diagonalUp"},
-    {column: -1, row: 0, direction: "horizontal"}
-  ];
-
+function isGameOver(grid, cell, turn) {
   // each direction starts out with one disc (the last placed disc)
   const discCountsByDirection = {
     diagonalDown: 1,
@@ -160,8 +166,8 @@ function isGameOver(grid, turn, cell) {
   };
 
   // tally up the adjacent cells that have discs belonging to the player
-  for (let i = 0; i < directions.length; i++) {
-    if (checkDirectionForWinner(grid, cell, directions[i], discCountsByDirection)) {
+  for (let i = 0; i < DIRECTIONS.length; i++) {
+    if (checkDirectionForWinner(grid, cell, turn, DIRECTIONS[i], discCountsByDirection)) {
       return true;
     }
   }
@@ -174,11 +180,12 @@ function isGameOver(grid, turn, cell) {
  *
  * @param grid
  * @param cell
+ * @param turn
  * @param direction
  * @param discCountsByDirection
  * @returns {*}
  */
-function checkDirectionForWinner(grid, cell, direction, discCountsByDirection) {
+function checkDirectionForWinner(grid, cell, turn, direction, discCountsByDirection) {
   // get the coordinates for the cell we're checking
   const column = cell.column + direction.column;
   const row = cell.row + direction.row;
@@ -189,13 +196,13 @@ function checkDirectionForWinner(grid, cell, direction, discCountsByDirection) {
   }
 
   // cell is empty?
-  const adjacentCell = grid[column][row];
-  if (adjacentCell.usedAtTurn === -1) {
+  const adjacentCellTurn = grid[column][row].usedAtTurn;
+  if (adjacentCellTurn === -1) {
     return false;
   }
 
   // player is the same?
-  if (cell.usedAtTurn % 2 === adjacentCell.usedAtTurn % 2) {
+  if (turn % 2 === adjacentCellTurn % 2) {
     // increment the counts for the current direction
     discCountsByDirection[direction.direction]++;
 
@@ -205,7 +212,7 @@ function checkDirectionForWinner(grid, cell, direction, discCountsByDirection) {
     }
 
     // recurse into this function with the adjacent cell as the new center going in the same direction
-    return checkDirectionForWinner(grid, adjacentCell, direction, discCountsByDirection);
+    return checkDirectionForWinner(grid, {column, row}, turn, direction, discCountsByDirection);
   }
 
   return false;

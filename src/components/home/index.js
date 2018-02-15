@@ -7,7 +7,7 @@ import {
   incrementAsync,
   decrement,
   decrementAsync
-} from '../../reducers/counter'
+} from '../../reducers/grid'
 
 const Home = props => (
   <div>
