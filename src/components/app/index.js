@@ -1,20 +1,18 @@
 import React from 'react';
-import { Route, Link } from 'react-router-dom'
-import Home from '../home'
-import About from '../about'
+import {Route} from 'react-router-dom';
+import Grid from '../grid';
+import GameStatus from '../gameStatus';
 
 const App = () => (
-  <div>
+  <div className='app'>
     <header>
-      <Link to="/">Home</Link>
-      <Link to="/about-us">About</Link>
+      <GameStatus/>
     </header>
 
     <main>
-      <Route exact path="/" component={Home} />
-      <Route exact path="/about-us" component={About} />
+      <Route exact path="/" component={Grid}/>
     </main>
   </div>
-)
+);
 
 export default App
